@@ -1,18 +1,14 @@
 import { initializeApp } from "firebase/app";
+
 import {
   getAuth,
-  signInWithRedirect,
   signInWithPopup,
   GoogleAuthProvider,
   UserCredential,
+  createUserWithEmailAndPassword,
 } from "firebase/auth";
-import {
-  getfirestore,
-  doc,
-  getDoc,
-  setDoc,
-  getFirestore,
-} from "firebase/firestore";
+
+import { doc, getDoc, setDoc, getFirestore } from "firebase/firestore";
 
 const GOOGLE_KEY_API: string = import.meta.env.VITE_GOOGLE_API_KEY;
 
@@ -27,13 +23,14 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
 export const auth = getAuth();
-export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
+export const signInWithGooglePopup = () =>
+  signInWithPopup(auth, googleProvider);
 
 export const db = getFirestore();
 
@@ -41,7 +38,6 @@ export const createUserDocumentFromAuth = async (
   userAuth: UserCredential["user"]
 ) => {
   const userDocRef = doc(db, "users", userAuth.uid);
-
   const userSnapshot = await getDoc(userDocRef);
 
   if (!userSnapshot.exists()) {
@@ -61,3 +57,21 @@ export const createUserDocumentFromAuth = async (
 
   return userDocRef;
 };
+
+interface NewUserFromUserAndPasswordProps {
+  email: string;
+  password: string;
+}
+
+export const createAuthUserWithEmailAndPassword = async ({
+  email,
+  password,
+}: NewUserFromUserAndPasswordProps) => {
+  if (!email || !password) return;
+  const { user } = await createUserWithEmailAndPassword(auth, email, password);
+  return user;
+};
+
+export enum ErrorFireBase {
+  EmailExist = "auth/email-already-in-use",
+}
